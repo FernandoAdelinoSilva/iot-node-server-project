@@ -1,0 +1,27 @@
+{
+  "name": "es6-server",
+  "version": "1.0.0",
+  "description": "ES6 Server",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "babel src -d dist",
+    "start": "node ./src/app.js"
+  },
+  "keywords": [
+    "es6"
+  ],
+  "author": "fadsilv",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-latest": "^6.24.1"
+  },
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "firebase": "^9.4.1",
+    "firebase-tools": "^9.22.0",
+    "socket.io": "^4.3.2"
+  }
+}
