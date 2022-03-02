@@ -6,8 +6,17 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+console.log('========= PLACE ===============');
+console.log(process.env.PLACE_NAME);
+
 const placeInfo = await getPlaceByName(process.env.PLACE_NAME);
+console.log('========= INFO ===============');
+console.log(placeInfo);
 const devices = await getDevicesByPlace(placeInfo.Name);
+
+console.log('========= DEVICES ===============');
+console.log(devices);
+console.log('=================================');
 
 // =================== TCP SERVER =================================
 
@@ -57,24 +66,31 @@ const io = new Server(httpServer, {
 io.on('connection', socket => {
   socket.on('message', ({ name, message }) => {
     let device = devices.find(element => element.Name === name);
-    
-    io.emit('message', { name, message })
 
-    var client = new Net.Socket();
-    client.connect(device.TcpPort, device.IpAddress, function() {
-      console.log(`${name} Connected`);
-      console.log(`Message ${message}`);
-      client.write(message);
-    });
-
-    client.on('data', function(data) {
-      console.log('Received: ' + data);
-      client.destroy();
-    });
-
-    client.on('close', function() {
-      console.log('Connection closed');
-    });
+    if(device) {
+      console.log('Sending a message to this Device:');
+      console.log(device);
+      
+      io.emit('message', { name, message })
+      
+      var client = new Net.Socket();
+      client.connect(device.TcpPort, device.IpAddress, function() {
+        console.log(`${name} Connected`);
+        console.log(`Message ${message}`);
+        client.write(message);
+      });
+      
+      client.on('data', function(data) {
+        console.log('Received: ' + data);
+        client.destroy();
+      });
+      
+      client.on('close', function() {
+        console.log('Connection closed');
+      });
+    } else {
+      console.log(`Device with name - ${name} - not found, message not delivered`);
+    }
   });
 });
 
