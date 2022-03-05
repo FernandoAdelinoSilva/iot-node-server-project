@@ -44,6 +44,7 @@ server.on('connection', function(socket) {
       if(device) {
         const logInfo = {
           DeviceName: device.Name,
+          PlaceId: device.PlaceId,
           Message: message.toString(),
           DateTime: new Date()
         }
