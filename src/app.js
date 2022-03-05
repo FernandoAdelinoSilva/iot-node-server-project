@@ -18,61 +18,11 @@ console.log('========= DEVICES ===============');
 console.log(devices);
 console.log('=================================');
 
-// =================== TCP SERVER =================================
+// =================== HTTP SERVER =================================
 
-const server = new Net.Server();
+const newHttpServer = createServer();
 
-server.listen(placeInfo.ServerTcpPort, function() {
-    console.log(`TCP Server listening for connection requests on socket ${placeInfo.ServerTcpPort}`);
-    console.log('=================================');
-
-});
-
-server.on('connection', function(socket) {
-
-    const address = socket.remoteAddress.substring(7);
-    console.log(`A new connection has been established with ${address}`);
-
-    // The server can also receive data from the client by reading from its socket.
-    socket.on('data', function(message) {
-
-      // How to emit a message to web
-      //io.emit('message', { name: "Esp32", message: message.toString() });
-      
-      const device = devices.find(device => device.IpAddress === address);
-      
-      if(device) {
-        const logInfo = {
-          DeviceName: device.Name,
-          PlaceId: device.PlaceId,
-          Message: message.toString(),
-          DateTime: new Date()
-        }
-
-        try {
-          addLogInformation(logInfo);
-          console.log(`Message - ${message} - received from ${device.Name} - ${address}`);
-        } catch (error) {
-          console.log(`Message - ${message} - received, error while saving on database`);
-        }
-      }
-    });
-
-    // When the client requests to end the TCP connection with the server, the server
-    // ends the connection.
-    socket.on('end', function() {
-        console.log('Closing connection with the client');
-    });
-
-    socket.on('error', function(err) {
-        console.log(`Error: ${err}`);
-    });
-});
-
-// =================== HTTP SERVER ===============================
-
-const httpServer = createServer();
-const io = new Server(httpServer, {
+const httpServer = new Server(newHttpServer, {
   cors: {
     origin: `http://localhost:3000`,
     methods: ["GET", "POST"],
@@ -81,38 +31,65 @@ const io = new Server(httpServer, {
   }
 });
 
-io.on('connection', socket => {
-  socket.on('message', ({ name, message }) => {
-    const device = devices.find(element => element.Name === name);
-
-    if(device) {
-      console.log('Sending a message to this Device:');
-      console.log(device);
-      
-      io.emit('message', { name, message })
-      
-      var client = new Net.Socket();
-      client.connect(device.TcpPort, device.IpAddress, function() {
-        console.log(`${name} Connected`);
-        console.log(`Message ${message}`);
-        client.write(message);
-      });
-      
-      client.on('data', function(data) {
-        console.log('Received: ' + data);
-        client.destroy();
-      });
-      
-      client.on('close', function() {
-        console.log('Connection closed');
-      });
-    } else {
-      console.log(`Device with name - ${name} - not found, message not delivered`);
-    }
-  });
-});
-
-httpServer.listen(placeInfo.ServerHttpPort, function() {
+newHttpServer.listen(placeInfo.ServerHttpPort, function() {
   console.log(`HTTP Server listening for connection requests on socket ${placeInfo.ServerHttpPort}`);
   console.log('=================================');
+});
+
+// =================== TCP SERVER =================================
+
+const tcpServer = new Net.Server();
+
+tcpServer.listen(placeInfo.ServerTcpPort, function() {
+    console.log(`TCP Server listening for connection requests on socket ${placeInfo.ServerTcpPort}`);
+    console.log('=================================');
+
+});
+
+tcpServer.on('connection', function(clientSocket) {
+  const address = clientSocket.remoteAddress.substring(7);
+  console.log(`A new connection has been established with ${address}`);
+
+  httpServer.on('connection', httpSocket => {
+    httpSocket.on('message', ({ name, message }) => {
+      const device = devices.find(element => element.Name === name);
+
+      if(device) {
+        console.log('Sending a message to this Device:');
+        console.log(device);
+        clientSocket.write(message);
+
+        try {
+          addLogInformation(device, message);
+          console.log(`Message - ${message} - received from ${device.Name} - ${address}`);
+        } catch (error) {
+          console.log(`Message - ${message} - received, error while saving on database`);
+        }
+      } else {
+        console.log(`Device with name - ${name} - not found, message not delivered`);
+      }
+    });
+  });
+
+  // The server can also receive data from the client by reading from its socket.
+  clientSocket.on('data', function(message) {
+    const device = devices.find(device => device.IpAddress === address);
+    
+    if(device) {
+      try {
+        addLogInformation(device, message);
+        console.log(`Message - ${message} - received from ${device.Name} - ${address}`);
+      } catch (error) {
+        console.log(`Message - ${message} - received, error while saving on database`);
+      }
+    }
+  });
+
+  clientSocket.on('end', function() {
+      console.log('Closing connection with the client');
+  });
+
+  clientSocket.on('error', function(err) {
+      console.log(`Error: ${err}`);
+  });
 });
