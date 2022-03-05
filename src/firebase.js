@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, query, where, getDocs } from "firebase/firestore"
+import { getFirestore, collection, query, where, doc, setDoc, getDocs } from "firebase/firestore"
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -54,5 +54,9 @@ export const getDevicesByPlace = async (placeName) => {
     devices.push(doc.data());
   });
   return devices;
+};
+
+export const addLogInformation = async (logInfo) => { 
+  await setDoc(doc(collection(db, "Logs")), logInfo);
 };
 

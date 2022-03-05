@@ -1,7 +1,7 @@
 import Net from 'net';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { getPlaceByName, getDevicesByPlace } from './firebase.js'
+import { getPlaceByName, getDevicesByPlace, addLogInformation } from './firebase.js'
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -24,20 +24,37 @@ const server = new Net.Server();
 
 server.listen(placeInfo.ServerTcpPort, function() {
     console.log(`TCP Server listening for connection requests on socket ${placeInfo.ServerTcpPort}`);
+    console.log('=================================');
+
 });
 
 server.on('connection', function(socket) {
-    console.log('A new connection has been established.');
 
-    // Now that a TCP connection has been established, the server can send data to
-    // the client by writing to its socket.
-    socket.write('Hello, client.');
+    const address = socket.remoteAddress.substring(7);
+    console.log(`A new connection has been established with ${address}`);
 
     // The server can also receive data from the client by reading from its socket.
     socket.on('data', function(message) {
-        console.log(`Data received from TCP client: ${message.toString()}`);
-        
-        io.emit('message', { name: "Esp32", message: message.toString() });
+
+      // How to emit a message to web
+      //io.emit('message', { name: "Esp32", message: message.toString() });
+      
+      const device = devices.find(device => device.IpAddress === address);
+      
+      if(device) {
+        const logInfo = {
+          DeviceName: device.Name,
+          Message: message.toString(),
+          DateTime: new Date()
+        }
+
+        try {
+          addLogInformation(logInfo);
+          console.log(`Message - ${message} - received from ${device.Name} - ${address}`);
+        } catch (error) {
+          console.log(`Message - ${message} - received, error while saving on database`);
+        }
+      }
     });
 
     // When the client requests to end the TCP connection with the server, the server
@@ -65,7 +82,7 @@ const io = new Server(httpServer, {
 
 io.on('connection', socket => {
   socket.on('message', ({ name, message }) => {
-    let device = devices.find(element => element.Name === name);
+    const device = devices.find(element => element.Name === name);
 
     if(device) {
       console.log('Sending a message to this Device:');
@@ -95,5 +112,6 @@ io.on('connection', socket => {
 });
 
 httpServer.listen(placeInfo.ServerHttpPort, function() {
-  console.log(`HTTP Server listening for connection requests on socket ${placeInfo.ServerHttpPort}`)
+  console.log(`HTTP Server listening for connection requests on socket ${placeInfo.ServerHttpPort}`);
+  console.log('=================================');
 });
