@@ -60,7 +60,7 @@ tcpServer.on('connection', function(clientSocket) {
         clientSocket.write(message);
 
         try {
-          addLogInformation(device, message);
+          addLogInformation(device, message, 'Web => Client');
           console.log(`Message - ${message} - received from ${device.Name} - ${address}`);
         } catch (error) {
           console.log(`Message - ${message} - received, error while saving on database`);
@@ -77,7 +77,7 @@ tcpServer.on('connection', function(clientSocket) {
     
     if(device) {
       try {
-        addLogInformation(device, message);
+        addLogInformation(device, message, 'Client => Web');
         console.log(`Message - ${message} - received from ${device.Name} - ${address}`);
       } catch (error) {
         console.log(`Message - ${message} - received, error while saving on database`);

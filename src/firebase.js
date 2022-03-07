@@ -56,13 +56,14 @@ export const getDevicesByPlace = async (placeName) => {
   return devices;
 };
 
-export const addLogInformation = async (device, message) => {
+export const addLogInformation = async (device, message, conn) => {
   
   const logInfo = {
     DeviceName: device.Name,
     PlaceId: device.PlaceId,
     Message: message.toString(),
-    DateTime: new Date()
+    DateTime: new Date(),
+    Connection: conn
   };
 
   await setDoc(doc(collection(db, "Logs")), logInfo);
